@@ -7,6 +7,17 @@ import itertools
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense
+
+def build_model(input_dim, layer_sizes, hidden_activation, output_dim, output_activation):
+    input_layer = Input(shape=(input_dim,))
+    x = input_layer
+    for size in layer_sizes:
+        x = Dense(size, activation=hidden_activation)(x)
+    output = Dense(output_dim, activation=output_activation, name='output')(x)
+    return Model(inputs=input_layer, outputs=output)
 
 def plot_frames_and_rectangles_on_axis(ax, frames_coords, rectangles, zone1_value=None, zone2_value=None):
     green_red_cmap = mcolors.LinearSegmentedColormap.from_list('GreenRed', ['green', 'red'])

@@ -9,7 +9,17 @@ import numpy as np
 from tqdm import tqdm
 import pickle
 import itertools
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense
 
+def build_model(input_dim, layer_sizes, hidden_activation, output_dim, output_activation):
+    input_layer = Input(shape=(input_dim,))
+    x = input_layer
+    for size in layer_sizes:
+        x = Dense(size, activation=hidden_activation)(x)
+    output = Dense(output_dim, activation=output_activation, name='output')(x)
+    return Model(inputs=input_layer, outputs=output)
 
 def plot_scatter_by_z_levels(coord, selected_ids=None, points_per_row=4, figsize=(16, 10)):
     """
