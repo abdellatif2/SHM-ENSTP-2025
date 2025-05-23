@@ -1,14 +1,75 @@
-import os
-try :
-  import comtypes.client
-except:
-  pass
-import matplotlib.pyplot as plt
+
 import pandas as pd
-import numpy as np
 from tqdm import tqdm
 import pickle
 import itertools
+
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import numpy as np
+
+def plot_frames_and_rectangles_on_axis(ax, frames_coords, rectangles, zone1_value=None, zone2_value=None):
+    green_red_cmap = mcolors.LinearSegmentedColormap.from_list('GreenRed', ['green', 'red'])
+    norm = mcolors.Normalize(vmin=0, vmax=1)
+
+    # Plot regular frames WITHOUT legend
+    for frame in frames_coords:
+        if frame['label'] == 'Frame':
+            x = [frame['start'][0], frame['end'][0]]
+            z = [frame['start'][1], frame['end'][1]]
+            ax.plot(x, z, color='blue', alpha=0.7, linewidth=3)
+
+    # Plot Zone 2 frame WITHOUT legend
+    for frame in frames_coords:
+        if frame['label'] == 'Zone':
+            x = [frame['start'][0], frame['end'][0]]
+            z = [frame['start'][1], frame['end'][1]]
+            ax.plot(x, z, color='red', alpha=0.7, linewidth=3)
+            
+            # Calculate midpoint of the Zone 2 frame line
+            mid_x = (x[0] + x[1]) / 2
+            mid_z = (z[0] + z[1]) / 2
+            
+            # Add text near midpoint, shifted by +1000 on x axis
+            ax.text(mid_x + 5000, mid_z, f"{zone2_value*100:.1f}%", color='black', fontsize=12,
+                    ha='center', va='center', bbox=dict(facecolor='white', alpha=0.7, boxstyle='round,pad=0.3'))
+            break
+
+    # Plot rectangles colored by zone values if provided, else default fill
+    for key, rect in rectangles.items():
+        if key == 'Zone' and zone1_value is not None:
+            color = green_red_cmap(norm(zone1_value))
+            ax.fill(rect['x'], rect['z'], color=color, alpha=0.6)
+            # Calculate centroid of Zone 1 rectangle
+            cx = np.mean(rect['x'])
+            cz = np.mean(rect['z'])
+            ax.text(cx, cz, f"{zone1_value*100:.1f}%", color='black', fontsize=12,
+                    ha='center', va='center', bbox=dict(facecolor='white', alpha=0.7, boxstyle='round,pad=0.3'))
+        else:
+            fill_color = 'grey' if key == 'Zone 1' else 'lightgrey'
+            ax.fill(rect['x'], rect['z'], color=fill_color, alpha=0.5)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Z')
+    ax.grid(True)
+    ax.axis('equal')
+
+def plot_side_by_side(frames_coords, rectangles, pred_values, target_values):
+    fig, axs = plt.subplots(1, 2, figsize=(15, 8))
+
+    zone1_pred, zone2_pred = pred_values
+    zone1_target, zone2_target = target_values
+
+    # Plot predicted
+    plot_frames_and_rectangles_on_axis(axs[0], frames_coords, rectangles, zone1_pred, zone2_pred)
+    axs[0].set_title('Predicted Values')
+
+    # Plot target
+    plot_frames_and_rectangles_on_axis(axs[1], frames_coords, rectangles, zone1_target, zone2_target)
+    axs[1].set_title('Target Values')
+
+    plt.tight_layout()
+    plt.show()
 
 
 

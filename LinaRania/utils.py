@@ -192,3 +192,74 @@ def start_API(verbose = True):
     return SapModel
 
 
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import numpy as np
+
+def plot_frames_and_rectangles_on_axis(ax, frames_coords, rectangles, zone1_value=None, zone2_values=None):
+    green_red_cmap = mcolors.LinearSegmentedColormap.from_list('GreenRed', ['green', 'red'])
+    norm = mcolors.Normalize(vmin=0, vmax=1)
+
+    zone2_idx = 0  # index for accessing zone2_values
+
+    # Plot regular frames
+    for frame in frames_coords:
+        if frame['label'] == 'Frame':
+            x = [frame['start'][0], frame['end'][0]]
+            z = [frame['start'][1], frame['end'][1]]
+            ax.plot(x, z, color='blue', alpha=0.7, linewidth=3)
+
+    # Plot Zone 2 frames with their values
+    for frame in frames_coords:
+        if frame['label'] == 'Zone':
+            x = [frame['start'][0], frame['end'][0]]
+            z = [frame['start'][1], frame['end'][1]]
+            ax.plot(x, z, color='red', alpha=0.7, linewidth=3)
+            
+            # Midpoint for text
+            mid_x = (x[0] + x[1]) / 2
+            mid_z = (z[0] + z[1]) / 2
+            
+            if zone2_values and zone2_idx < len(zone2_values):
+                value = zone2_values[zone2_idx]
+                ax.text(mid_x + 5, mid_z, f"{value*100:.1f}%", color='black', fontsize=12,
+                        ha='center', va='center', bbox=dict(facecolor='white', alpha=0.7, boxstyle='round,pad=0.3'))
+                zone2_idx += 1
+
+    # Plot rectangles colored by value
+    for key, rect in rectangles.items():
+        if key == 'Zone' and zone1_value is not None:
+            color = green_red_cmap(norm(zone1_value))
+            ax.fill(rect['x'], rect['z'], color=color, alpha=0.6)
+
+            cx = np.mean(rect['x'])
+            cz = np.mean(rect['z'])
+            ax.text(cx, cz, f"{zone1_value*100:.1f}%", color='black', fontsize=12,
+                    ha='center', va='center', bbox=dict(facecolor='white', alpha=0.7, boxstyle='round,pad=0.3'))
+        else:
+            fill_color = 'grey' if key == 'Zone 1' else 'lightgrey'
+            ax.fill(rect['x'], rect['z'], color=fill_color, alpha=0.5)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Z')
+    ax.grid(True)
+    ax.axis('equal')
+def plot_side_by_side(frames_coords, rectangles, pred_values, target_values):
+    fig, axs = plt.subplots(1, 2, figsize=(18, 9))  # Large enough figure
+
+    zone1_pred, zone2a_pred, zone2b_pred = pred_values
+    zone1_target, zone2a_target, zone2b_target = target_values
+
+    # Predicted
+    plot_frames_and_rectangles_on_axis(axs[0], frames_coords, rectangles,
+                                       zone1_value=zone1_pred, zone2_values=[zone2a_pred, zone2b_pred])
+    axs[0].set_title('Predicted Values')
+
+    # Target
+    plot_frames_and_rectangles_on_axis(axs[1], frames_coords, rectangles,
+                                       zone1_value=zone1_target, zone2_values=[zone2a_target, zone2b_target])
+    axs[1].set_title('Target Values')
+
+    # Use tight_layout instead
+    # plt.tight_layout()
+    plt.show()
